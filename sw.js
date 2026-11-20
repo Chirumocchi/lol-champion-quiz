@@ -1,4 +1,4 @@
-const SHELL='lol-quiz-shell-v05', IMAGES='lol-quiz-images-v1';
+const SHELL='lol-quiz-shell-v06', IMAGES='lol-quiz-images-v1';
 self.addEventListener('install',event=>{event.waitUntil(caches.open(SHELL).then(c=>c.addAll(['./','./index.html','./manifest.webmanifest'])).then(()=>self.skipWaiting()))});
-self.addEventListener('activate',event=>{event.waitUntil(self.clients.claim())});
+self.addEventListener('activate',event=>{event.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('lol-quiz-shell-')&&k!==SHELL).map(k=>caches.delete(k))))]))});
 self.addEventListener('fetch',event=>{const req=event.request;if(req.method!=='GET')return;const url=new URL(req.url);if(url.origin===self.location.origin){event.respondWith(fetch(req).then(async r=>{if(r.ok){const cache=await caches.open(SHELL);cache.put(req,r.clone()).catch(()=>{})}return r}).catch(async()=>await caches.match(req)||await caches.match('./index.html')));return}if(url.hostname==='ddragon.leagueoflegends.com'&&/\.(png|jpg|jpeg|webp)$/i.test(url.pathname)){event.respondWith(caches.open(IMAGES).then(async cache=>{const cached=await cache.match(req);if(cached)return cached;const response=await fetch(req);if(response.ok)cache.put(req,response.clone()).catch(()=>{});return response}));}});
